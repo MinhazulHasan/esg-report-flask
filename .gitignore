@@ -1,0 +1,6 @@
+__pycache__
+*.pyc
+esg_flask_env/
+logs/
+/web.config
+.env

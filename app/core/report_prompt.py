@@ -124,3 +124,19 @@ def get_report_prompt_miscellaneous():
 - Any deviation from the above structure will be considered invalid response.
 """
     return PROMPT_TEMPLATE
+
+
+
+def get_user_query_prompt():
+    PROMPT_TEMPLATE = """
+You are an ESG expert.
+
+Instructions:
+- Provide a precise, and accurate answer to the query.
+- Response as much short as you can. If the query asks for year-wise data, include the data for each year.
+- Write in plain text without any reference numbers, bullets, or symbols in your response.
+- Use natural sentences only.
+
+Now, answer this query: {query}
+"""
+    return PROMPT_TEMPLATE

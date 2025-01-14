@@ -16,9 +16,8 @@ async def create_esg_report_table():
                 CREATE TABLE ESGReport (
                     id INT IDENTITY(1,1) PRIMARY KEY,
                     company_name VARCHAR(255),
-                    question VARCHAR(255),
+                    data_field VARCHAR(255),
                     year VARCHAR(10),
-                    source VARCHAR(255),
                     response TEXT,
                     reported_at DATETIME DEFAULT GETDATE()
                 )

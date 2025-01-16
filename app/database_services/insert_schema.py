@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-from app.utilities.logger import report_logger
 from typing import Dict, List, Tuple
 from app.database_services.db_utils import get_connection
 
@@ -50,7 +49,7 @@ async def insert_or_update_company_report(company_name: str, data_field: str, da
                     """,
                     (response, reported_at, company_name, data_field, year),
                 )
-                report_logger.info(f"From DATABASE Service: Data updated successfully for {company_name}, field: {data_field}.")
+                print(f"From DATABASE Service: Data updated successfully for {company_name}, field: {data_field}.")
             
             else:
                 # Insert new record
@@ -61,17 +60,11 @@ async def insert_or_update_company_report(company_name: str, data_field: str, da
                     """,
                     (company_name, data_field, year, response, reported_at),
                 )
-                report_logger.info(f"From DATABASE Service: Data inserted successfully for {company_name}, field: {data_field}.")
+                print(f"From DATABASE Service: Data inserted successfully for {company_name}, field: {data_field}.")
         
         await conn.commit()
 
     except Exception as e:
-        report_logger.error(
-            f"From DATABASE Service:\n"
-            f"Error inserting data for company: {company_name}, field: {data_field}, "
-            f"data: {formatted_data}, error: {str(e)}",
-            exc_info=True
-        )
         await conn.rollback()  # Rollback the transaction on failure.
         raise RuntimeError("Failed to insert data into ESGReport.") from e
     
@@ -110,7 +103,7 @@ async def insert_company_report_table_without_year(company_name: str, data_field
                 """,
                 (response, reported_at, company_name, data_field),
             )
-            report_logger.info(f"Data updated successfully for {company_name}, field: {data_field}.")
+            print(f"Data updated successfully for {company_name}, field: {data_field}.")
 
         else:
             # Insert new record
@@ -121,12 +114,12 @@ async def insert_company_report_table_without_year(company_name: str, data_field
                 """,
                 (company_name, data_field, response, reported_at),
             )
-            report_logger.info(f"Data inserted successfully for {company_name}, field: {data_field}.")
+            print(f"Data inserted successfully for {company_name}, field: {data_field}.")
 
         await conn.commit()
 
     except Exception as e:
-        report_logger.error(
+        print(
             f"Error inserting data for company: {company_name}, field: {data_field}, "
             f"response: {response}, error: {str(e)}",
             exc_info=True

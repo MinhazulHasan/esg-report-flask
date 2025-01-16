@@ -15,23 +15,53 @@ from app.enums.data_field import (
 )
 import json
 import asyncio
+import time
 from app.database_services.insert_schema import (
     insert_or_update_company_report,
     insert_company_report_table_without_year
 )
-from app.utilities.logger import report_logger
 
 
 
 esg_report_bp = Blueprint('esg_report', __name__)
 
 
+# Global rate limiting variables
+request_count = 0
+last_reset_time = time.time()
+
+# Rate limit parameters
+MAX_REQUESTS_PER_MINUTE = 50
+RATE_LIMIT_PERIOD = 60  # 60 seconds
+
+
 
 @esg_report_bp.route('/total_data', methods=['GET'])
 def get_total_data():
     total_len = len(financial_fields) + len(gsg_fields) + len(boolean_fields) + len(miscellaneous_fields)
-    print(total_len)
     return jsonify({'total_data': total_len})
+
+
+# Helper function to manage rate limit
+def enforce_rate_limit():
+    global request_count, last_reset_time
+
+    current_time = time.time()
+    time_since_last_reset = current_time - last_reset_time
+
+    if time_since_last_reset >= RATE_LIMIT_PERIOD:
+        # Reset the count after 1 minute
+        request_count = 0
+        last_reset_time = current_time
+
+    if request_count >= MAX_REQUESTS_PER_MINUTE:
+        # Introduce a delay if the limit is reached
+        sleep_time = RATE_LIMIT_PERIOD - time_since_last_reset
+        time.sleep(sleep_time)
+        request_count = 0  # Reset after sleep
+
+    request_count += 1  # Increment the request counter
+
 
 
 
@@ -56,11 +86,9 @@ async def process_field(chat, field, company_name, prompt_template, is_financial
                     await insert_or_update_company_report(company_name, data_field, data["response"])
                 else:
                     await insert_company_report_table_without_year(company_name, data_field, data["response"])
-                report_logger.info(f"Data inserted successfully for {data_field}!")
                 return data_field, data["response"], data
             return data_field, "", None
     except Exception as e:
-        report_logger.error(f"Error processing field {data_field}: {str(e)}")
         return data_field, "", None
 
 
@@ -70,6 +98,9 @@ def get_financial_report():
     company_name = request.json.get('company_name')
     if not company_name:
         return jsonify({'error': 'Company name is required'}), 400
+    
+    # Enforce rate limit before processing
+    enforce_rate_limit()
 
     chat = ChatPerplexity(
         temperature=0,
@@ -100,7 +131,6 @@ def get_financial_report():
             return responses_data
 
         except Exception as e:
-            report_logger.error(f"Error in process_financial_fields: {str(e)}")
             raise
 
     # Run the async function using asyncio
@@ -121,6 +151,9 @@ def get_esg_report():
     company_name = request.json.get('company_name')
     if not company_name:
         return jsonify({'error': 'Company name is required'}), 400
+    
+    # Enforce rate limit before processing
+    enforce_rate_limit()
 
     chat = ChatPerplexity(
         temperature=0,
@@ -166,7 +199,6 @@ def get_esg_report():
             return responses_data
 
         except Exception as e:
-            report_logger.error(f"Error in process_other_fields: {str(e)}")
             raise
 
     # Run the async function using asyncio
